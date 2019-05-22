@@ -38,7 +38,8 @@ ui <- fluidPage(
         
         # Show a plot of the generated distribution
         mainPanel(
-            plotOutput("distPlot") #renders/produces "displot" (see below)
+            plotOutput("distPlot"), #renders/produces "displot" (see below)
+            dataTableOutput("dist_smry")
         )
     )
 )
@@ -62,11 +63,32 @@ server <- function(input, output) {
         if(input$var != "none") {
             p <- p + facet_wrap(input$var) # with strings we do not use ~
         }
-        
         p
     })
     
+    output$dist_smry <- renderDataTable({
+        if(input$var == "none") {
+            gss_cat %>%
+                summarize(Mean = mean(tvhours, na.rm = TRUE),
+                          SD   = sd(tvhours, na.rm = TRUE),
+                          Min  = min(tvhours, na.rm = TRUE),
+                          Max  = max(tvhours, na.rm = TRUE)) %>%
+                mutate_if(is.numeric, round, 2) %>%
+                datatable(rownames = FALSE)
+        }
+        else {
+            gss_cat %>% 
+                group_by(!!sym(input$var)) %>% 
+                summarize(Mean = mean(tvhours, na.rm = TRUE),
+                          SD   = sd(tvhours, na.rm = TRUE),
+                          Min  = min(tvhours, na.rm = TRUE),
+                          Max  = max(tvhours, na.rm = TRUE)) %>% 
+                mutate_if(is.numeric, round, 2) %>% 
+                datatable(rownames = FALSE)
+        }
+    })
 }
+
 
 
 # Run the application 
