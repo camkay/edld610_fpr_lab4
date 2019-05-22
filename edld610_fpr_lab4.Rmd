@@ -14,22 +14,53 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+There are two parts to this lab. The first includes writing a relatively complicated function. The second involves using that function within a relatively basic shiny app.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Part A: Writing a summary function
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Write a function that takes a given data frame as its first argument, a grouping variable as its second argument, and a column to summarize as its third argument.
 
-```{r cars}
-summary(cars)
-```
+### Function behavior
 
-## Including Plots
+By default, the function should report:
 
-You can also embed plots, for example:
+Total number of observations
+* Number of non-missing observations
+* Number of missing observations
+* Mean
+* Standard deviation
+* Minimum
+* Maximum
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+However, the function should be flexible so it can take any function(s) as its input to summarize by, provided the function results in a single value (e.g., anything you could feed to `dplyr::summarize`). You’ll need a fourth optional argument that lists the function(s) to use in the summary.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Errors
+
+Embed an error if
+
+* Anything other than a data frame is supplied as the first argument
+* The provided column to summarize is not numeric.
+
+### Warnings
+
+Embed a warning if
+
+* The grouping variable is numeric (generally you would expect * the grouping variable to be a categorical variable)
+
+### Some guidance
+
+If you want to use {dplyr} you’ll need to use non-standard evaluation (NSE), so something like `!!enquo(group_var)`, where `group_var` is the formal argument of your function. If you go this route, you will also likely want to look into `summarize_*`, which take an additional .funs argument (to make the functions used in summarizing more flexible). Finally, dplyr::pull (together with NSE) will likely be helpful for checking types for warnings/errors.
+
+Alternatively, you might consider `split`ing the dataset by the grouping variable, then looping over each split to apply the function(s) supplied.
+
+### Sample output
+
+See the [assignment page](https://rmarkdown.rstudio.com/authoring_basics.html) for the examples.
+
+## Part B: Shiny app
+
+Build a shiny app using the `gss_cat` dataset available through the {forcats} package, which you can access with `data(gss_cat, package = "forcats")`.
+
+The app should allow the user to select a variable, including (potentially) “none”, and will produce a histogram of `tvhours` faceted by that variable. Below the plot, render a table summarizing the distributions using the function you wrote in Part A. Note, I would encourage you to take a look at `selectInput` rather than `radioButtons` for the categorical variable, but either should work.
+
+For an example of what the shiny app should look like, see [here](https://djanderson07.shinyapps.io/lab-c3/).
