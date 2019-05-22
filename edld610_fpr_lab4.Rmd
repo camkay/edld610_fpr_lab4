@@ -11,7 +11,8 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# load packages
+library(tidyverse)
 ```
 
 There are two parts to this lab. The first includes writing a relatively complicated function. The second involves using that function within a relatively basic shiny app.
@@ -56,6 +57,65 @@ Alternatively, you might consider `split`ing the dataset by the grouping variabl
 ### Sample output
 
 See the [assignment page](https://rmarkdown.rstudio.com/authoring_basics.html) for the examples.
+
+```{r parta}
+# create the summariser funcntion
+summariser <- function(data, group, column, FUN, na.rm = FALSE) {
+  # return error if data is not of type data
+  if (!is.data.frame(data)) {
+    stop("Data is not of type data.frame")
+  }
+  # return error if the provided columnt to summarize is not of type numeric
+  if (!is.numeric(data[, column])) {
+    stop("The column to be summarized is not of type numeric.")
+  }
+  # return warning if the grouping variable is numeric
+  if (is.numeric(data[, group])) {
+    warning("The grouping variable was of type numeric and was coerced to type factor.")
+  }
+  # if function is missing, use default functions
+  if (missing(FUN)) {
+    FUN <- list(n       = length,
+                n_valid = function(x) sum(!is.na(x)),
+                n_miss  = function(x) sum(is.na(x)),
+                m       = function(x) mean(x, na.rm = na.rm),
+                sd      = function(x) sd(x, na.rm = na.rm),
+                min     = function(x) min(x, na.rm = na.rm),
+                max     = function(x) max(x, na.rm = na.rm))
+  }
+  # split the data by the group column
+  data_split <- split(data, data[ , group])
+  # summarise the column of interest
+  data_summed <- lapply(data_split, function(x){
+    vapply(FUN, FUN.VALUE = numeric(1), function(y) {
+      y(x[, column])
+    })
+  })
+  # rbind list
+  data_summed  <- do.call(rbind, data_summed)
+  # apply names to columns
+  colnames(data_summed) <- names(FUN) 
+  # return result
+  data_summed
+}
+
+# testing
+
+summariser(iris, "Species", "Sepal.Length") # works
+
+summariser("data", "Species", "Sepal.Length") # throw data.frame error
+
+summariser(mtcars, "cyl", "wt") # throws coercing warning
+
+summariser(airquality, "Month", "Ozone") # returns NAS because na.rm = FALSE
+
+summariser(airquality, "Month", "Ozone", na.rm = TRUE) # does not return NAS because na.rm = TRUE
+
+summariser(iris, "Species", "Sepal.Length", FUN = list(mean     = mean,
+                                                       sd       = sd,
+                                                       root_sum = function(x) sum(sqrt(x)))) # works with custom functions
+
+```
 
 ## Part B: Shiny app
 
